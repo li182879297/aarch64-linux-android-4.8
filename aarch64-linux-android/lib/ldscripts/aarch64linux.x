@@ -44,7 +44,7 @@ SECTIONS
   .plt            : ALIGN(16) { *(.plt) *(.iplt) }
   .text           :
   {
-    *(.text.unlikely .text.*_unlikely)
+    *(.text.unlikely .text.*_unlikely .text.unlikely.*)
     *(.text.exit .text.exit.*)
     *(.text.startup .text.startup.*)
     *(.text.hot .text.hot.*)
@@ -70,7 +70,7 @@ SECTIONS
   .exception_ranges*) }
   /* Adjust the address for the data segment.  For 32 bits we want to align
   at exactly a page boundary to make life easier for apriori. */
-  . = ALIGN (CONSTANT (MAXPAGESIZE)); . = DATA_SEGMENT_ALIGN (CONSTANT (MAXPAGESIZE), CONSTANT (COMMONPAGESIZE));
+  . = ALIGN (CONSTANT (MAXPAGESIZE)) - ((CONSTANT (MAXPAGESIZE) - .) & (CONSTANT (MAXPAGESIZE) - 1)); . = DATA_SEGMENT_ALIGN (CONSTANT (MAXPAGESIZE), CONSTANT (COMMONPAGESIZE));
   /* Exception handling  */
   .eh_frame       : ONLY_IF_RW { KEEP (*(.eh_frame)) }
   .gcc_except_table   : ONLY_IF_RW { *(.gcc_except_table .gcc_except_table.*) }
@@ -94,8 +94,7 @@ SECTIONS
   {
     KEEP (*crtbegin*.o(.init_array))
     KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)))
-    KEEP (*(.init_array))
-    KEEP (*(EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .ctors))
+    KEEP (*(.init_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .ctors))
   }
   PROVIDE_HIDDEN (__init_array_end = .);
   PROVIDE_HIDDEN (__fini_array_start = .);
@@ -103,8 +102,7 @@ SECTIONS
   {
     KEEP (*crtbegin*.o(.fini_array))
     KEEP (*(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)))
-    KEEP (*(.fini_array))
-    KEEP (*(EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .dtors))
+    KEEP (*(.fini_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .dtors))
   }
   PROVIDE_HIDDEN (__fini_array_end = .);
   .ctors          :
@@ -161,11 +159,12 @@ SECTIONS
    /* Align here to ensure that the .bss section occupies space up to
       _end.  Align after .bss to ensure correct alignment even if the
       .bss section disappears because there are no input sections.  */
-   . = ALIGN(32 / 8);
+   . = ALIGN(64 / 8);
   }
   _bss_end__ = . ; __bss_end__ = . ;
-  . = ALIGN(32 / 8);
-  . = ALIGN(32 / 8);
+  . = ALIGN(64 / 8);
+  . = SEGMENT_START("ldata-segment", .);
+  . = ALIGN(64 / 8);
   __end__ = . ;
   _end = .;
   _bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
@@ -194,7 +193,7 @@ SECTIONS
   /* DWARF 2 */
   .debug_info     0 : { *(.debug_info .gnu.linkonce.wi.*) }
   .debug_abbrev   0 : { *(.debug_abbrev) }
-  .debug_line     0 : { *(.debug_line) }
+  .debug_line     0 : { *(.debug_line .debug_line.* .debug_line_end ) }
   .debug_frame    0 : { *(.debug_frame) }
   .debug_str      0 : { *(.debug_str) }
   .debug_loc      0 : { *(.debug_loc) }
